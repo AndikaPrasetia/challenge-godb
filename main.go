@@ -144,6 +144,30 @@ func scanCustomer(rows *sql.Rows) []entity.CustomerEnrollment {
 	return customers
 }
 
+func viewCustomerById() {
+	db := connectDb()
+	defer db.Close()
+	var err error
+
+	customer := entity.CustomerEnrollment{}
+
+	scanner := bufio.NewScanner(os.Stdin)
+
+	fmt.Println("Enter Customer Id:")
+	scanner.Scan()
+	customer.Id, _ = strconv.Atoi(scanner.Text())
+
+	sqlStatement := "SELECT * FROM customer WHERE customer_id = $1;"
+
+	err = db.QueryRow(sqlStatement, customer.Id).Scan(&customer.Id, &customer.Name, &customer.Phone, &customer.Address, &customer.CreatedAt, &customer.UpdatedAt)
+	if err != nil {
+		fmt.Println("Customer not found.")
+	} else {
+		fmt.Println(customer)
+	}
+
+}
+
 // menu customer
 func customerMenu() {
 	for {
@@ -169,8 +193,8 @@ func customerMenu() {
 			for _, customer := range customers {
 				fmt.Println(customer.Id, customer.Name, customer.Phone, customer.Address, customer.CreatedAt, customer.UpdatedAt)
 			}
-		// case "3":
-		// 	viewCustomerById()
+		case "3":
+			viewCustomerById()
 		// case "4":
 		// 	updateCustomer()
 		// case "5":
