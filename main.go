@@ -102,9 +102,46 @@ func createCustomer() {
 	if err != nil {
 		fmt.Println("Customer ID already exists. Please enter a different ID")
 	} else {
-		fmt.Println("Successfully Inser Data!")
+		fmt.Println("Successfully Insert Data!")
+	}
+}
+
+// view customer
+func viewOfListCustomers() []entity.CustomerEnrollment {
+	db := connectDb()
+	defer db.Close()
+
+	sqlStatement := "SELECT * FROM customer;"
+
+	rows, err := db.Query(sqlStatement)
+	if err != nil {
+		panic(err)
+	}
+	defer rows.Close()
+
+	customers := scanCustomer(rows)
+	return customers
+}
+
+func scanCustomer(rows *sql.Rows) []entity.CustomerEnrollment {
+	customers := []entity.CustomerEnrollment{}
+	var err error
+
+	for rows.Next() {
+		customer := entity.CustomerEnrollment{}
+		err := rows.Scan(&customer.Id, &customer.Name, &customer.Phone, &customer.Address, &customer.CreatedAt, &customer.UpdatedAt)
+		if err != nil {
+			panic(err)
+		}
+		customers = append(customers, customer)
 	}
 
+	err = rows.Err()
+	if err != nil {
+		panic(err)
+	}
+
+	return customers
 }
 
 // menu customer
@@ -127,8 +164,11 @@ func customerMenu() {
 		switch scanner.Text() {
 		case "1":
 			createCustomer()
-		// case "2":
-		// 	viewCustomers()
+		case "2":
+			customers := viewOfListCustomers()
+			for _, customer := range customers {
+				fmt.Println(customer.Id, customer.Name, customer.Phone, customer.Address, customer.CreatedAt, customer.UpdatedAt)
+			}
 		// case "3":
 		// 	viewCustomerById()
 		// case "4":

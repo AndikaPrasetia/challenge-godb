@@ -8,4 +8,5 @@ type CustomerEnrollment struct {
 	Phone     string
 	Address   string
 	CreatedAt time.Time
+	UpdatedAt time.Time
 }
