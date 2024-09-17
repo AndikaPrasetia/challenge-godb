@@ -95,7 +95,7 @@ func createCustomer() {
 	scanner.Scan()
 	customerEnrollment.Address = scanner.Text()
 
-	sqlStatement := "INSERT INTO customer (customer_id, name, phone, address) VALUES ($1, $2, $3, $4)"
+	sqlStatement := "INSERT INTO customer (customer_id, name, phone, address) VALUES ($1, $2, $3, $4);"
 
 	_, err = db.Exec(sqlStatement, customerEnrollment.Id, customerEnrollment.Name, customerEnrollment.Phone, customerEnrollment.Address)
 
@@ -144,7 +144,7 @@ func scanCustomer(rows *sql.Rows) []entity.CustomerEnrollment {
 	return customers
 }
 
-func viewCustomerById() entity.CustomerEnrollment {
+func viewDetailCustomerById() {
 	db := connectDb()
 	defer db.Close()
 	var err error
@@ -162,10 +162,9 @@ func viewCustomerById() entity.CustomerEnrollment {
 	err = db.QueryRow(sqlStatement, customer.Id).Scan(&customer.Id, &customer.Name, &customer.Phone, &customer.Address, &customer.CreatedAt, &customer.UpdatedAt)
 	if err != nil {
 		fmt.Println("Customer not found.")
+	} else {
+		fmt.Println(customer)
 	}
-
-	return customer
-
 }
 
 func updateCustomer() {
@@ -173,13 +172,25 @@ func updateCustomer() {
 	defer db.Close()
 	var err error
 
+	scanner := bufio.NewScanner(os.Stdin)
 	customer := entity.CustomerEnrollment{}
 
-	scanner := bufio.NewScanner(os.Stdin)
+	fmt.Println("Enter Customer Details:")
 
-	fmt.Println("Enter Customer Id:")
+	fmt.Print("Customer ID: ")
 	scanner.Scan()
 	customer.Id, _ = strconv.Atoi(scanner.Text())
+
+	sqlCheck := "SELECT customer_id FROM customer WHERE customer_id = $1"
+	err = db.QueryRow(sqlCheck, customer.Id).Scan(&customer.Id)
+
+	if err == sql.ErrNoRows {
+		fmt.Println("Customer not found.")
+		return
+	} else if err != nil {
+		fmt.Println("Error checking customer ID:", err)
+		return
+	}
 
 	fmt.Print("Name: ")
 	scanner.Scan()
@@ -193,14 +204,12 @@ func updateCustomer() {
 	scanner.Scan()
 	customer.Address = scanner.Text()
 
-	sqlStatement := "UPDATE customer SET name = $2, phone = $3, address = $4, created_at = $5, updated_at = $6 WHERE id = $1;"
+	sqlStatement := "UPDATE customer SET name = $2, phone = $3, address = $4, created_at = $5, updated_at = $6 WHERE customer_id = $1;"
 
 	_, err = db.Exec(sqlStatement, customer.Id, customer.Name, customer.Phone, customer.Address, customer.CreatedAt, customer.UpdatedAt)
 
-	fmt.Println(customer)
-
 	if err != nil {
-		fmt.Println("Customer not found.")
+		fmt.Println("Error Udate Data", err)
 	} else {
 		fmt.Println("Successfully Update Data!")
 	}
@@ -232,10 +241,7 @@ func customerMenu() {
 				fmt.Println(customer.Id, customer.Name, customer.Phone, customer.Address, customer.CreatedAt, customer.UpdatedAt)
 			}
 		case "3":
-			customer := viewCustomerById()
-
-			fmt.Printf("%d %s %s %s %s %s\n",
-				customer.Id, customer.Name, customer.Phone, customer.Address, customer.CreatedAt, customer.UpdatedAt)
+			viewDetailCustomerById()
 		case "4":
 			updateCustomer()
 		// case "5":
