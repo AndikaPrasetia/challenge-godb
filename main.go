@@ -51,16 +51,134 @@ func main() {
 		fmt.Print("Enter your choice: ")
 		scanner := bufio.NewScanner(os.Stdin)
 		scanner.Scan()
+		choice, _ := strconv.Atoi(scanner.Text())
 
-		switch scanner.Text() {
-		case "1":
+		switch choice {
+		case 1:
 			customerMenu()
-		// case "2":
-		// 	serviceMenu()
-		// case "3":
-		// 	orderMenu()
-		case "4":
-			fmt.Println("Exiting application...")
+		case 2:
+			serviceMenu()
+		case 3:
+			orderMenu()
+		case 4:
+			os.Exit(0)
+		default:
+			fmt.Println("Invalid choice. Please try again.")
+		}
+	}
+}
+
+// customer menu
+func customerMenu() {
+	for {
+		fmt.Println(strings.Repeat("=", 50))
+		fmt.Println("================= Customer Menu ==================")
+		fmt.Println("1. Create Customer")
+		fmt.Println("2. View List of Customers")
+		fmt.Println("3. View Details Customer by ID")
+		fmt.Println("4. Update Customer")
+		fmt.Println("5. Delete Customer")
+		fmt.Println("6. Back to Main Menu")
+		fmt.Println(strings.Repeat("=", 50))
+
+		fmt.Print("Enter your choice: ")
+		scanner := bufio.NewScanner(os.Stdin)
+		scanner.Scan()
+		choice, _ := strconv.Atoi(scanner.Text())
+
+		switch choice {
+		case 1:
+			createCustomer()
+		case 2:
+			customers := viewOfListCustomers()
+			for _, customer := range customers {
+				fmt.Println(customer.Id, customer.Name, customer.Phone, customer.Address, customer.CreatedAt, customer.UpdatedAt)
+			}
+		case 3:
+			viewDetailCustomerById()
+		case 4:
+			updateCustomer()
+		case 5:
+			deleteCustomer()
+		case 6:
+			return
+		default:
+			fmt.Println("Invalid choice. Please try again.")
+		}
+	}
+}
+
+func serviceMenu() {
+	for {
+		fmt.Println(strings.Repeat("=", 50))
+		fmt.Println("================== Service Menu ==================")
+		fmt.Println("1. Create Service")
+		fmt.Println("2. View List of Services")
+		fmt.Println("3. View Details Service by ID")
+		fmt.Println("4. Update Service")
+		fmt.Println("5. Delete Service")
+		fmt.Println("6. Back to Main Menu")
+		fmt.Println(strings.Repeat("=", 50))
+
+		fmt.Print("Enter your choice: ")
+		scanner := bufio.NewScanner(os.Stdin)
+		scanner.Scan()
+		choice, _ := strconv.Atoi(scanner.Text())
+
+		switch choice {
+		case 1:
+			createCustomer()
+		case 2:
+			customers := viewOfListCustomers()
+			for _, customer := range customers {
+				fmt.Println(customer.Id, customer.Name, customer.Phone, customer.Address, customer.CreatedAt, customer.UpdatedAt)
+			}
+		case 3:
+			viewDetailCustomerById()
+		case 4:
+			updateCustomer()
+		case 5:
+			deleteCustomer()
+		case 6:
+			return
+		default:
+			fmt.Println("Invalid choice. Please try again.")
+		}
+	}
+}
+
+func orderMenu() {
+	for {
+		fmt.Println(strings.Repeat("=", 50))
+		fmt.Println("=================== Order Menu ===================")
+		fmt.Println("1. Create Order")
+		fmt.Println("2. View List of Orders")
+		fmt.Println("3. View Details Order by ID")
+		fmt.Println("4. Update Order")
+		fmt.Println("5. Delete Order")
+		fmt.Println("6. Back to Main Menu")
+		fmt.Println(strings.Repeat("=", 50))
+
+		fmt.Print("Enter your choice: ")
+		scanner := bufio.NewScanner(os.Stdin)
+		scanner.Scan()
+		choice, _ := strconv.Atoi(scanner.Text())
+
+		switch choice {
+		case 1:
+			createCustomer()
+		case 2:
+			customers := viewOfListCustomers()
+			for _, customer := range customers {
+				fmt.Println(customer.Id, customer.Name, customer.Phone, customer.Address, customer.CreatedAt, customer.UpdatedAt)
+			}
+		case 3:
+			viewDetailCustomerById()
+		case 4:
+			updateCustomer()
+		case 5:
+			deleteCustomer()
+		case 6:
 			return
 		default:
 			fmt.Println("Invalid choice. Please try again.")
@@ -75,29 +193,29 @@ func createCustomer() {
 	var err error
 
 	scanner := bufio.NewScanner(os.Stdin)
-	customerEnrollment := entity.CustomerEnrollment{}
+	customer := entity.CustomerEnrollment{}
 
 	fmt.Println("Enter Customer Details:")
 
 	fmt.Print("Customer ID: ")
 	scanner.Scan()
-	customerEnrollment.Id, _ = strconv.Atoi(scanner.Text())
+	customer.Id, _ = strconv.Atoi(scanner.Text())
 
 	fmt.Print("Name: ")
 	scanner.Scan()
-	customerEnrollment.Name = scanner.Text()
+	customer.Name = scanner.Text()
 
 	fmt.Print("Phone: ")
 	scanner.Scan()
-	customerEnrollment.Phone = scanner.Text()
+	customer.Phone = scanner.Text()
 
 	fmt.Print("Address: ")
 	scanner.Scan()
-	customerEnrollment.Address = scanner.Text()
+	customer.Address = scanner.Text()
 
 	sqlStatement := "INSERT INTO customer (customer_id, name, phone, address) VALUES ($1, $2, $3, $4);"
 
-	_, err = db.Exec(sqlStatement, customerEnrollment.Id, customerEnrollment.Name, customerEnrollment.Phone, customerEnrollment.Address)
+	_, err = db.Exec(sqlStatement, customer.Id, customer.Name, customer.Phone, customer.Address)
 
 	if err != nil {
 		fmt.Println("Customer ID already exists. Please enter a different ID")
@@ -255,44 +373,5 @@ func deleteCustomer() {
 		fmt.Println("Error deleting customer:", err)
 	} else {
 		fmt.Println("Successfully Delete Data!")
-	}
-}
-
-// customer menu
-func customerMenu() {
-	for {
-		fmt.Println(strings.Repeat("=", 50))
-		fmt.Println("================= Customer Menu ==================")
-		fmt.Println("1. Create Customer")
-		fmt.Println("2. View List of Customers")
-		fmt.Println("3. View Details Customer by ID")
-		fmt.Println("4. Update Customer")
-		fmt.Println("5. Delete Customer")
-		fmt.Println("6. Back to Main Menu")
-		fmt.Println(strings.Repeat("=", 50))
-
-		fmt.Print("Enter your choice: ")
-		scanner := bufio.NewScanner(os.Stdin)
-		scanner.Scan()
-
-		switch scanner.Text() {
-		case "1":
-			createCustomer()
-		case "2":
-			customers := viewOfListCustomers()
-			for _, customer := range customers {
-				fmt.Println(customer.Id, customer.Name, customer.Phone, customer.Address, customer.CreatedAt, customer.UpdatedAt)
-			}
-		case "3":
-			viewDetailCustomerById()
-		case "4":
-			updateCustomer()
-		case "5":
-			deleteCustomer()
-		case "6":
-			return
-		default:
-			fmt.Println("Invalid choice. Please try again.")
-		}
 	}
 }
