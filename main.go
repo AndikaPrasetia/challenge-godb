@@ -68,7 +68,7 @@ func main() {
 	}
 }
 
-// membuat customer
+// create customer
 func createCustomer() {
 	db := connectDb()
 	defer db.Close()
@@ -106,7 +106,7 @@ func createCustomer() {
 	}
 }
 
-// view customer
+// view customers
 func viewOfListCustomers() []entity.CustomerEnrollment {
 	db := connectDb()
 	defer db.Close()
@@ -123,6 +123,7 @@ func viewOfListCustomers() []entity.CustomerEnrollment {
 	return customers
 }
 
+// scan customer
 func scanCustomer(rows *sql.Rows) []entity.CustomerEnrollment {
 	customers := []entity.CustomerEnrollment{}
 	var err error
@@ -144,6 +145,7 @@ func scanCustomer(rows *sql.Rows) []entity.CustomerEnrollment {
 	return customers
 }
 
+// view customer by id
 func viewDetailCustomerById() {
 	db := connectDb()
 	defer db.Close()
@@ -167,6 +169,7 @@ func viewDetailCustomerById() {
 	}
 }
 
+// update customer
 func updateCustomer() {
 	db := connectDb()
 	defer db.Close()
@@ -174,8 +177,6 @@ func updateCustomer() {
 
 	scanner := bufio.NewScanner(os.Stdin)
 	customer := entity.CustomerEnrollment{}
-
-	fmt.Println("Enter Customer Details:")
 
 	fmt.Print("Customer ID: ")
 	scanner.Scan()
@@ -186,10 +187,8 @@ func updateCustomer() {
 
 	if err == sql.ErrNoRows {
 		fmt.Println("Customer not found.")
-		return
 	} else if err != nil {
 		fmt.Println("Error checking customer ID:", err)
-		return
 	}
 
 	fmt.Print("Name: ")
@@ -204,9 +203,9 @@ func updateCustomer() {
 	scanner.Scan()
 	customer.Address = scanner.Text()
 
-	sqlStatement := "UPDATE customer SET name = $2, phone = $3, address = $4, created_at = $5, updated_at = $6 WHERE customer_id = $1;"
+	sqlStatement := "UPDATE customer SET name = $2, phone = $3, address = $4 WHERE customer_id = $1;"
 
-	_, err = db.Exec(sqlStatement, customer.Id, customer.Name, customer.Phone, customer.Address, customer.CreatedAt, customer.UpdatedAt)
+	_, err = db.Exec(sqlStatement, customer.Id, customer.Name, customer.Phone, customer.Address)
 
 	if err != nil {
 		fmt.Println("Error Udate Data", err)
@@ -215,7 +214,24 @@ func updateCustomer() {
 	}
 }
 
-// menu customer
+func deleteCustomer() {
+	db := connectDb()
+	defer db.Close()
+	var err error
+
+	scanner := bufio.NewScanner(os.Stdin)
+	customer := entity.CustomerEnrollment{}
+	customer.Id, _ = strconv.Atoi(scanner.Text())
+	sqlStatement := "DELETE FROM customer WHERE customer_id = $1;"
+	_, err = db.Exec(sqlStatement, customer.Id)
+	if err != nil {
+		fmt.Println("Error Delete Data", err)
+	} else {
+		fmt.Println("Successfully Delete Data!")
+	}
+}
+
+// customer menu
 func customerMenu() {
 	for {
 		fmt.Println(strings.Repeat("=", 50))
@@ -244,8 +260,8 @@ func customerMenu() {
 			viewDetailCustomerById()
 		case "4":
 			updateCustomer()
-		// case "5":
-		// 	deleteCustomer()
+		case "5":
+			deleteCustomer()
 		case "6":
 			return
 		default:
