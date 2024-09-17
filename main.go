@@ -144,7 +144,31 @@ func scanCustomer(rows *sql.Rows) []entity.CustomerEnrollment {
 	return customers
 }
 
-func viewCustomerById() {
+func viewCustomerById() entity.CustomerEnrollment {
+	db := connectDb()
+	defer db.Close()
+	var err error
+
+	customer := entity.CustomerEnrollment{}
+
+	scanner := bufio.NewScanner(os.Stdin)
+
+	fmt.Print("Enter Customer Id: ")
+	scanner.Scan()
+	customer.Id, _ = strconv.Atoi(scanner.Text())
+
+	sqlStatement := "SELECT * FROM customer WHERE customer_id = $1;"
+
+	err = db.QueryRow(sqlStatement, customer.Id).Scan(&customer.Id, &customer.Name, &customer.Phone, &customer.Address, &customer.CreatedAt, &customer.UpdatedAt)
+	if err != nil {
+		fmt.Println("Customer not found.")
+	}
+
+	return customer
+
+}
+
+func updateCustomer() {
 	db := connectDb()
 	defer db.Close()
 	var err error
@@ -157,15 +181,29 @@ func viewCustomerById() {
 	scanner.Scan()
 	customer.Id, _ = strconv.Atoi(scanner.Text())
 
-	sqlStatement := "SELECT * FROM customer WHERE customer_id = $1;"
+	fmt.Print("Name: ")
+	scanner.Scan()
+	customer.Name = scanner.Text()
 
-	err = db.QueryRow(sqlStatement, customer.Id).Scan(&customer.Id, &customer.Name, &customer.Phone, &customer.Address, &customer.CreatedAt, &customer.UpdatedAt)
+	fmt.Print("Phone: ")
+	scanner.Scan()
+	customer.Phone = scanner.Text()
+
+	fmt.Print("Address: ")
+	scanner.Scan()
+	customer.Address = scanner.Text()
+
+	sqlStatement := "UPDATE customer SET name = $2, phone = $3, address = $4, created_at = $5, updated_at = $6 WHERE id = $1;"
+
+	_, err = db.Exec(sqlStatement, customer.Id, customer.Name, customer.Phone, customer.Address, customer.CreatedAt, customer.UpdatedAt)
+
+	fmt.Println(customer)
+
 	if err != nil {
 		fmt.Println("Customer not found.")
 	} else {
-		fmt.Println(customer)
+		fmt.Println("Successfully Update Data!")
 	}
-
 }
 
 // menu customer
@@ -194,9 +232,12 @@ func customerMenu() {
 				fmt.Println(customer.Id, customer.Name, customer.Phone, customer.Address, customer.CreatedAt, customer.UpdatedAt)
 			}
 		case "3":
-			viewCustomerById()
-		// case "4":
-		// 	updateCustomer()
+			customer := viewCustomerById()
+
+			fmt.Printf("%d %s %s %s %s %s\n",
+				customer.Id, customer.Name, customer.Phone, customer.Address, customer.CreatedAt, customer.UpdatedAt)
+		case "4":
+			updateCustomer()
 		// case "5":
 		// 	deleteCustomer()
 		case "6":
