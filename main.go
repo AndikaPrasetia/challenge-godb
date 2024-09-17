@@ -217,15 +217,42 @@ func updateCustomer() {
 func deleteCustomer() {
 	db := connectDb()
 	defer db.Close()
-	var err error
 
 	scanner := bufio.NewScanner(os.Stdin)
-	customer := entity.CustomerEnrollment{}
-	customer.Id, _ = strconv.Atoi(scanner.Text())
-	sqlStatement := "DELETE FROM customer WHERE customer_id = $1;"
-	_, err = db.Exec(sqlStatement, customer.Id)
+	var customer_id int
+
+	fmt.Print("Enter Customer ID: ")
+	scanner.Scan()
+	customer_id, _ = strconv.Atoi(scanner.Text())
+
+	sqlCheckCustomer := "SELECT customer_id FROM customer WHERE customer_id = $1;"
+
+	err := db.QueryRow(sqlCheckCustomer, customer_id).Scan(&customer_id)
+
+	if err == sql.ErrNoRows {
+		fmt.Println("Customer ID not found. Please enter a different ID")
+
+	} else if err != nil {
+		fmt.Println("Error checking customer ID:", err)
+	}
+
+	sqlCheckOrder := "SELECT customer_id FROM customer WHERE customer_id = $1;"
+	var order_id int
+
+	err = db.QueryRow(sqlCheckOrder, order_id).Scan(&order_id)
+
+	if err == nil {
+		fmt.Println("Customer ID is being used in orders. Please delete the order first.")
+
+	} else if err != sql.ErrNoRows {
+		fmt.Println("Error checking orders ID:", err)
+	}
+
+	sqlDeleteStatement := "DELETE FROM customer WHERE customer_id = $1;"
+	_, err = db.Exec(sqlDeleteStatement, customer_id)
+
 	if err != nil {
-		fmt.Println("Error Delete Data", err)
+		fmt.Println("Error deleting customer:", err)
 	} else {
 		fmt.Println("Successfully Delete Data!")
 	}
