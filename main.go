@@ -39,6 +39,8 @@ func connectDb() *sql.DB {
 }
 
 func main() {
+
+	// main menu
 	for {
 		fmt.Println(strings.Repeat("=", 50))
 		fmt.Println("=================== Main Menu ====================")
@@ -74,7 +76,7 @@ func customerMenu() {
 		fmt.Println(strings.Repeat("=", 50))
 		fmt.Println("================= Customer Menu ==================")
 		fmt.Println("1. Create Customer")
-		fmt.Println("2. View List of Customers")
+		fmt.Println("2. View Of List Customers")
 		fmt.Println("3. View Details Customer by ID")
 		fmt.Println("4. Update Customer")
 		fmt.Println("5. Delete Customer")
@@ -108,12 +110,13 @@ func customerMenu() {
 	}
 }
 
+// service menu
 func serviceMenu() {
 	for {
 		fmt.Println(strings.Repeat("=", 50))
 		fmt.Println("================== Service Menu ==================")
 		fmt.Println("1. Create Service")
-		fmt.Println("2. View List of Services")
+		fmt.Println("2. View Of List Services")
 		fmt.Println("3. View Details Service by ID")
 		fmt.Println("4. Update Service")
 		fmt.Println("5. Delete Service")
@@ -127,11 +130,11 @@ func serviceMenu() {
 
 		switch choice {
 		case 1:
-			createCustomer()
+			createService()
 		case 2:
-			customers := viewOfListCustomers()
-			for _, customer := range customers {
-				fmt.Println(customer.Id, customer.Name, customer.Phone, customer.Address, customer.CreatedAt, customer.UpdatedAt)
+			services := viewOfListServices()
+			for _, service := range services {
+				fmt.Println(service.Id, service.Name, service.Unit, service.Price, service.CreatedAt, service.UpdatedAt)
 			}
 		case 3:
 			viewDetailCustomerById()
@@ -147,12 +150,13 @@ func serviceMenu() {
 	}
 }
 
+// order menu
 func orderMenu() {
 	for {
 		fmt.Println(strings.Repeat("=", 50))
 		fmt.Println("=================== Order Menu ===================")
 		fmt.Println("1. Create Order")
-		fmt.Println("2. View List of Orders")
+		fmt.Println("2. View Of List Orders")
 		fmt.Println("3. View Details Order by ID")
 		fmt.Println("4. Update Order")
 		fmt.Println("5. Delete Order")
@@ -241,28 +245,6 @@ func viewOfListCustomers() []entity.CustomerEnrollment {
 	return customers
 }
 
-// scan customer
-func scanCustomer(rows *sql.Rows) []entity.CustomerEnrollment {
-	customers := []entity.CustomerEnrollment{}
-	var err error
-
-	for rows.Next() {
-		customer := entity.CustomerEnrollment{}
-		err := rows.Scan(&customer.Id, &customer.Name, &customer.Phone, &customer.Address, &customer.CreatedAt, &customer.UpdatedAt)
-		if err != nil {
-			panic(err)
-		}
-		customers = append(customers, customer)
-	}
-
-	err = rows.Err()
-	if err != nil {
-		panic(err)
-	}
-
-	return customers
-}
-
 // view customer by id
 func viewDetailCustomerById() {
 	db := connectDb()
@@ -293,8 +275,8 @@ func updateCustomer() {
 	defer db.Close()
 	var err error
 
-	scanner := bufio.NewScanner(os.Stdin)
 	customer := entity.CustomerEnrollment{}
+	scanner := bufio.NewScanner(os.Stdin)
 
 	fmt.Print("Customer ID: ")
 	scanner.Scan()
@@ -332,6 +314,7 @@ func updateCustomer() {
 	}
 }
 
+// delete customer
 func deleteCustomer() {
 	db := connectDb()
 	defer db.Close()
@@ -366,12 +349,111 @@ func deleteCustomer() {
 		fmt.Println("Error checking orders ID:", err)
 	}
 
-	sqlDeleteStatement := "DELETE FROM customer WHERE customer_id = $1;"
-	_, err = db.Exec(sqlDeleteStatement, customer_id)
+	sqlStatement := "DELETE FROM customer WHERE customer_id = $1;"
+	_, err = db.Exec(sqlStatement, customer_id)
 
 	if err != nil {
 		fmt.Println("Error deleting customer:", err)
 	} else {
 		fmt.Println("Successfully Delete Data!")
 	}
+}
+
+// create service
+func createService() {
+	db := connectDb()
+	defer db.Close()
+	var err error
+
+	scanner := bufio.NewScanner(os.Stdin)
+	service := entity.ServiceEnrollment{}
+
+	fmt.Println("Enter Service Details:")
+
+	fmt.Print("Service ID: ")
+	scanner.Scan()
+	service.Id, _ = strconv.Atoi(scanner.Text())
+
+	fmt.Print("Name: ")
+	scanner.Scan()
+	service.Name = scanner.Text()
+
+	fmt.Print("Unit: ")
+	scanner.Scan()
+	service.Unit = scanner.Text()
+
+	fmt.Print("Price: ")
+	scanner.Scan()
+	service.Price, _ = strconv.Atoi(scanner.Text())
+
+	sqlStatement := "INSERT INTO service (service_id, service_name, unit, price) VALUES ($1, $2, $3, $4);"
+
+	_, err = db.Exec(sqlStatement, service.Id, service.Name, service.Unit, service.Price)
+
+	if err != nil {
+		fmt.Println("Customer ID already exists. Please enter a different ID")
+	} else {
+		fmt.Println("Successfully Insert Data!")
+	}
+}
+func viewOfListServices() []entity.ServiceEnrollment {
+	db := connectDb()
+	defer db.Close()
+
+	sqlStatement := "SELECT * FROM service;"
+
+	rows, err := db.Query(sqlStatement)
+	if err != nil {
+		panic(err)
+	}
+	defer rows.Close()
+
+	services := scanService(rows)
+	return services
+}
+
+// =============== HELPER FUNCTION ===============
+
+// scan customer
+func scanCustomer(rows *sql.Rows) []entity.CustomerEnrollment {
+	customers := []entity.CustomerEnrollment{}
+	var err error
+
+	for rows.Next() {
+		customer := entity.CustomerEnrollment{}
+		err := rows.Scan(&customer.Id, &customer.Name, &customer.Phone, &customer.Address, &customer.CreatedAt, &customer.UpdatedAt)
+		if err != nil {
+			panic(err)
+		}
+		customers = append(customers, customer)
+	}
+
+	err = rows.Err()
+	if err != nil {
+		panic(err)
+	}
+
+	return customers
+}
+
+// scan service
+func scanService(rows *sql.Rows) []entity.ServiceEnrollment {
+	services := []entity.ServiceEnrollment{}
+	var err error
+
+	for rows.Next() {
+		service := entity.ServiceEnrollment{}
+		err := rows.Scan(&service.Id, &service.Name, &service.Unit, &service.Price, &service.CreatedAt, &service.UpdatedAt)
+		if err != nil {
+			panic(err)
+		}
+		services = append(services, service)
+	}
+
+	err = rows.Err()
+	if err != nil {
+		panic(err)
+	}
+
+	return services
 }
