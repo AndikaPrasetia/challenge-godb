@@ -139,7 +139,7 @@ func serviceMenu() {
 		case 3:
 			viewDetailServiceById()
 		case 4:
-			updateCustomer()
+			updateService()
 		case 5:
 			deleteCustomer()
 		case 6:
@@ -287,8 +287,10 @@ func updateCustomer() {
 
 	if err == sql.ErrNoRows {
 		fmt.Println("Customer not found.")
+		return
 	} else if err != nil {
 		fmt.Println("Error checking customer ID:", err)
+		return
 	}
 
 	fmt.Print("Name: ")
@@ -424,7 +426,7 @@ func viewDetailServiceById() {
 
 	scanner := bufio.NewScanner(os.Stdin)
 
-	fmt.Print("Enter Customer Id: ")
+	fmt.Print("Enter Service Id: ")
 	scanner.Scan()
 	service.Id, _ = strconv.Atoi(scanner.Text())
 
@@ -432,9 +434,55 @@ func viewDetailServiceById() {
 
 	err = db.QueryRow(sqlStatement, service.Id).Scan(&service.Id, &service.Name, &service.Unit, &service.Price, &service.CreatedAt, &service.UpdatedAt)
 	if err != nil {
-		fmt.Println("Customer not found.")
+		fmt.Println("Service not found.")
 	} else {
 		fmt.Println(service)
+	}
+}
+
+func updateService() {
+	db := connectDb()
+	defer db.Close()
+	var err error
+
+	service := entity.ServiceEnrollment{}
+	scanner := bufio.NewScanner(os.Stdin)
+
+	fmt.Print("Service ID: ")
+	scanner.Scan()
+	service.Id, _ = strconv.Atoi(scanner.Text())
+
+	sqlCheck := "SELECT service_id FROM service WHERE service_id = $1"
+	err = db.QueryRow(sqlCheck, service.Id).Scan(&service.Id)
+
+	if err == sql.ErrNoRows {
+		fmt.Println("Service not found.")
+		return
+	} else if err != nil {
+		fmt.Println("Error checking customer ID:", err)
+		return
+	}
+
+	fmt.Print("Name: ")
+	scanner.Scan()
+	service.Name = scanner.Text()
+
+	fmt.Print("Unit: ")
+	scanner.Scan()
+	service.Unit = scanner.Text()
+
+	fmt.Print("Price: ")
+	scanner.Scan()
+	service.Price, _ = strconv.Atoi(scanner.Text())
+
+	sqlStatement := "UPDATE service SET service_name = $2, unit = $3, price = $4 WHERE service_id = $1;"
+
+	_, err = db.Exec(sqlStatement, service.Id, service.Name, service.Unit, service.Price)
+
+	if err != nil {
+		fmt.Println("Error Udate Data", err)
+	} else {
+		fmt.Println("Successfully Update Data!")
 	}
 }
 
