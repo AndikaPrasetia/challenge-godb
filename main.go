@@ -137,7 +137,7 @@ func serviceMenu() {
 				fmt.Println(service.Id, service.Name, service.Unit, service.Price, service.CreatedAt, service.UpdatedAt)
 			}
 		case 3:
-			viewDetailCustomerById()
+			viewDetailServiceById()
 		case 4:
 			updateCustomer()
 		case 5:
@@ -396,6 +396,8 @@ func createService() {
 		fmt.Println("Successfully Insert Data!")
 	}
 }
+
+// view services
 func viewOfListServices() []entity.ServiceEnrollment {
 	db := connectDb()
 	defer db.Close()
@@ -410,6 +412,30 @@ func viewOfListServices() []entity.ServiceEnrollment {
 
 	services := scanService(rows)
 	return services
+}
+
+// view service by id
+func viewDetailServiceById() {
+	db := connectDb()
+	defer db.Close()
+	var err error
+
+	service := entity.ServiceEnrollment{}
+
+	scanner := bufio.NewScanner(os.Stdin)
+
+	fmt.Print("Enter Customer Id: ")
+	scanner.Scan()
+	service.Id, _ = strconv.Atoi(scanner.Text())
+
+	sqlStatement := "SELECT * FROM service WHERE service_id = $1;"
+
+	err = db.QueryRow(sqlStatement, service.Id).Scan(&service.Id, &service.Name, &service.Unit, &service.Price, &service.CreatedAt, &service.UpdatedAt)
+	if err != nil {
+		fmt.Println("Customer not found.")
+	} else {
+		fmt.Println(service)
+	}
 }
 
 // =============== HELPER FUNCTION ===============
