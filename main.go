@@ -141,7 +141,7 @@ func serviceMenu() {
 		case 4:
 			updateService()
 		case 5:
-			deleteCustomer()
+			deleteService()
 		case 6:
 			return
 		default:
@@ -334,7 +334,7 @@ func deleteCustomer() {
 
 	if err == sql.ErrNoRows {
 		fmt.Println("Customer ID not found. Please enter a different ID")
-
+		return
 	} else if err != nil {
 		fmt.Println("Error checking customer ID:", err)
 	}
@@ -440,6 +440,7 @@ func viewDetailServiceById() {
 	}
 }
 
+// update service
 func updateService() {
 	db := connectDb()
 	defer db.Close()
@@ -483,6 +484,51 @@ func updateService() {
 		fmt.Println("Error Udate Data", err)
 	} else {
 		fmt.Println("Successfully Update Data!")
+	}
+}
+
+// delete service
+func deleteService() {
+	db := connectDb()
+	defer db.Close()
+
+	scanner := bufio.NewScanner(os.Stdin)
+	var service_id int
+
+	fmt.Print("Enter Service ID: ")
+	scanner.Scan()
+	service_id, _ = strconv.Atoi(scanner.Text())
+
+	sqlCheckService := "SELECT service_id FROM service WHERE service_id = $1;"
+
+	err := db.QueryRow(sqlCheckService, service_id).Scan(&service_id)
+
+	if err == sql.ErrNoRows {
+		fmt.Println("Service ID not found. Please enter a different ID")
+		return
+	} else if err != nil {
+		fmt.Println("Error checking service ID:", err)
+	}
+
+	sqlCheckOrder := "SELECT service_id FROM service WHERE service_id = $1;"
+	var order_id int
+
+	err = db.QueryRow(sqlCheckOrder, order_id).Scan(&order_id)
+
+	if err == nil {
+		fmt.Println("Service ID is being used in orders. Please delete the order first.")
+
+	} else if err != sql.ErrNoRows {
+		fmt.Println("Error checking orders ID:", err)
+	}
+
+	sqlStatement := "DELETE FROM service WHERE service_id = $1;"
+	_, err = db.Exec(sqlStatement, service_id)
+
+	if err != nil {
+		fmt.Println("Error deleting service:", err)
+	} else {
+		fmt.Println("Successfully Delete Data!")
 	}
 }
 
