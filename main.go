@@ -174,17 +174,12 @@ func orderMenu() {
 		case 1:
 			createOrder()
 		case 2:
-			customers := viewOfListCustomers()
-			for _, customer := range customers {
-				fmt.Println(customer.Id, customer.Name, customer.Phone, customer.Address, customer.CreatedAt, customer.UpdatedAt)
-			}
+			completeOrder()
 		case 3:
-			viewDetailCustomerById()
+			viewOfListOrders()
 		case 4:
-			updateCustomer()
+			viewDetailOrderById()
 		case 5:
-			deleteCustomer()
-		case 6:
 			return
 		default:
 			fmt.Println("Invalid choice. Please try again.")
@@ -357,7 +352,7 @@ func deleteCustomer() {
 	_, err = db.Exec(sqlStatement, customer_id)
 
 	if err != nil {
-		fmt.Println("Error deleting customer:", err)
+		fmt.Println("Customer ID is being used in orders. Please delete the order first.")
 	} else {
 		fmt.Println("Successfully Delete Data!")
 	}
@@ -528,12 +523,13 @@ func deleteService() {
 	_, err = db.Exec(sqlStatement, service_id)
 
 	if err != nil {
-		fmt.Println("Error deleting service:", err)
+		fmt.Println("Service ID is being used in orders. Please delete the order first.")
 	} else {
 		fmt.Println("Successfully Delete Data!")
 	}
 }
 
+// create order
 func createOrder() {
 	db := connectDb()
 	defer db.Close()
@@ -587,7 +583,7 @@ func createOrder() {
 
 	// cek jika order id ada/tidak
 	if err == nil {
-		fmt.Println("Order ID already exists. Please enter a different ID.")
+		fmt.Println("Order ID already exists. Please delete the order first.")
 		tx.Rollback()
 		return
 	} else if err != sql.ErrNoRows {
@@ -596,27 +592,14 @@ func createOrder() {
 		return
 	}
 
-	// input completion date
-	fmt.Print("Enter Completion Date (YYYY-MM-DD): ")
-	scanner.Scan()
-	dateStr := scanner.Text()
-
-	completionTime, err := time.Parse("2006-01-02", dateStr)
-	if err != nil {
-		fmt.Println("Invalid date format.")
-		tx.Rollback()
-		return
-	}
-	order.CompletionDate = sql.NullTime{Time: completionTime, Valid: true}
-
 	// input received by
 	fmt.Print("Enter Received By: ")
 	scanner.Scan()
 	order.ReceivedBy = scanner.Text()
 
 	// insert ke tabel order
-	sqlInsertOrder := "INSERT INTO \"order\" (order_id, customer_id, order_date, completion_date, received_by) VALUES ($1, $2, $3, $4, $5);"
-	_, err = tx.Exec(sqlInsertOrder, order.Id, customer_id, time.Now(), order.CompletionDate, order.ReceivedBy)
+	sqlInsertOrder := "INSERT INTO \"order\" (order_id, customer_id, order_date, received_by) VALUES ($1, $2, $3, $4);"
+	_, err = tx.Exec(sqlInsertOrder, order.Id, customer_id, time.Now(), order.ReceivedBy)
 
 	if err != nil {
 		fmt.Println("Error creating order:", err)
@@ -644,14 +627,84 @@ func createOrder() {
 		return
 	}
 
-	fmt.Println("Order and order detail added successfully!")
-
 	// commit transaction jika tidak ada error
 	err = tx.Commit()
 	if err != nil {
 		fmt.Println("Error committing transaction:", err)
 	} else {
-		fmt.Println("Transaction committed successfully!")
+		fmt.Println("Successfully Create Order!")
+	}
+}
+
+// complete order
+func completeOrder() {
+	db := connectDb()
+	defer db.Close()
+
+	scanner := bufio.NewScanner(os.Stdin)
+	var order_id int
+
+	fmt.Print("Enter Order ID: ")
+	scanner.Scan()
+	order_id, _ = strconv.Atoi(scanner.Text())
+	sqlChectOrder := "SELECT order_id FROM \"order\" WHERE order_id = $1;"
+
+	err := db.QueryRow(sqlChectOrder, order_id).Scan(&order_id)
+	if err != nil {
+		fmt.Println("Order not found.")
+		return
+	}
+
+	// debug
+	fmt.Println("Order ID:", order_id)
+
+	sqlStatement := "UPDATE \"order\" SET completion_date = $1 WHERE order_id = $2;"
+	_, err = db.Exec(sqlStatement, time.Now(), order_id)
+	if err != nil {
+		fmt.Println("Error updating order:", err)
+	} else {
+		fmt.Println("Successfully Update Data!")
+	}
+
+}
+
+// view services
+func viewOfListOrders() []entity.OrderEnrollment {
+	db := connectDb()
+	defer db.Close()
+
+	sqlStatement := "SELECT * FROM \"order\";"
+
+	rows, err := db.Query(sqlStatement)
+	if err != nil {
+		panic(err)
+	}
+	defer rows.Close()
+
+	orders := scanOrder(rows)
+	return orders
+}
+
+func viewDetailOrderById() {
+	db := connectDb()
+	defer db.Close()
+	var err error
+
+	order := entity.OrderEnrollment{}
+
+	scanner := bufio.NewScanner(os.Stdin)
+
+	fmt.Print("Enter Order Id: ")
+	scanner.Scan()
+	order.Id, _ = strconv.Atoi(scanner.Text())
+
+	sqlStatement := "SELECT * FROM \"order\" WHERE order_id = $1;"
+
+	err = db.QueryRow(sqlStatement, order.Id).Scan(&order.Id, &order.CustomerId, &order.OrderDate, &order.CompletionDate, &order.ReceivedBy, &order.CreatedAt, &order.UpdatedAt)
+	if err != nil {
+		fmt.Println("Order not found.")
+	} else {
+		fmt.Println(order)
 	}
 }
 
@@ -691,6 +744,7 @@ func scanService(rows *sql.Rows) []entity.ServiceEnrollment {
 			panic(err)
 		}
 		services = append(services, service)
+
 	}
 
 	err = rows.Err()
@@ -699,4 +753,30 @@ func scanService(rows *sql.Rows) []entity.ServiceEnrollment {
 	}
 
 	return services
+}
+
+// scan order
+func scanOrder(rows *sql.Rows) []entity.OrderEnrollment {
+	orders := []entity.OrderEnrollment{}
+	var err error
+
+	for rows.Next() {
+		order := entity.OrderEnrollment{}
+		err := rows.Scan(&order.Id, &order.CustomerId, &order.OrderDate, &order.CompletionDate, &order.ReceivedBy, &order.CreatedAt, &order.UpdatedAt)
+
+		if err != nil {
+			panic(err)
+		} else {
+			fmt.Println(order)
+		}
+		orders = append(orders, order)
+
+	}
+
+	err = rows.Err()
+	if err != nil {
+		panic(err)
+	}
+
+	return orders
 }
