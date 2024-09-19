@@ -450,7 +450,7 @@ func updateService() {
 	scanner.Scan()
 	service.Id, _ = strconv.Atoi(scanner.Text())
 
-	sqlCheck := "SELECT service_id FROM service WHERE service_id = $1"
+	sqlCheck := "SELECT service_id FROM service WHERE service_id = $1;"
 	err = db.QueryRow(sqlCheck, service.Id).Scan(&service.Id)
 
 	if err == sql.ErrNoRows {
@@ -534,13 +534,11 @@ func createOrder() {
 	db := connectDb()
 	defer db.Close()
 
-	// memulai transaction
 	tx, err := db.Begin()
 	if err != nil {
 		panic(err)
 	}
 
-	// defer untuk rollback jika error
 	defer func() {
 		if p := recover(); p != nil {
 			tx.Rollback()
@@ -553,16 +551,13 @@ func createOrder() {
 	scanner := bufio.NewScanner(os.Stdin)
 	var customer_id int
 
-	// input customer id
 	fmt.Print("Enter Customer ID: ")
 	scanner.Scan()
 	customer_id, _ = strconv.Atoi(scanner.Text())
 
-	// query customer id untuk cek customer id
 	sqlCheckCustomer := "SELECT customer_id FROM customer WHERE customer_id = $1;"
 	err = tx.QueryRow(sqlCheckCustomer, customer_id).Scan(&customer_id)
 
-	// cek jika customer ada/tidak
 	if err == sql.ErrNoRows {
 		fmt.Println("Customer not found.")
 		tx.Rollback()
@@ -573,7 +568,6 @@ func createOrder() {
 		return
 	}
 
-	// input order id
 	fmt.Print("Enter Order ID: ")
 	scanner.Scan()
 	order.Id, _ = strconv.Atoi(scanner.Text())
@@ -581,7 +575,6 @@ func createOrder() {
 	sqlCheckOrder := "SELECT order_id FROM \"order\" WHERE order_id = $1;"
 	err = tx.QueryRow(sqlCheckOrder, order.Id).Scan(&order.Id)
 
-	// cek jika order id ada/tidak
 	if err == nil {
 		fmt.Println("Order ID already exists. Please delete the order first.")
 		tx.Rollback()
@@ -592,12 +585,10 @@ func createOrder() {
 		return
 	}
 
-	// input received by
 	fmt.Print("Enter Received By: ")
 	scanner.Scan()
 	order.ReceivedBy = scanner.Text()
 
-	// insert ke tabel order
 	sqlInsertOrder := "INSERT INTO \"order\" (order_id, customer_id, order_date, received_by) VALUES ($1, $2, $3, $4);"
 	_, err = tx.Exec(sqlInsertOrder, order.Id, customer_id, time.Now(), order.ReceivedBy)
 
@@ -607,7 +598,6 @@ func createOrder() {
 		return
 	}
 
-	// input service id dan quantity
 	fmt.Print("Enter Service ID: ")
 	scanner.Scan()
 	orderDetail.ServiceId, _ = strconv.Atoi(scanner.Text())
@@ -616,18 +606,15 @@ func createOrder() {
 	scanner.Scan()
 	orderDetail.Qty, _ = strconv.Atoi(scanner.Text())
 
-	// query service id untuk cek service id
 	sqlInsertOrderDetail := "INSERT INTO order_detail (order_id, service_id, qty) VALUES ($1, $2, $3);"
 	_, err = tx.Exec(sqlInsertOrderDetail, order.Id, orderDetail.ServiceId, orderDetail.Qty)
 
-	// cek jika service id ada/tidak
 	if err != nil {
 		fmt.Println("Error adding order detail:", err)
 		tx.Rollback()
 		return
 	}
 
-	// commit transaction jika tidak ada error
 	err = tx.Commit()
 	if err != nil {
 		fmt.Println("Error committing transaction:", err)
