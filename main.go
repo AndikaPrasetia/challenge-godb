@@ -8,6 +8,9 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"time"
+
+	// "time"
 
 	_ "github.com/lib/pq"
 )
@@ -156,11 +159,10 @@ func orderMenu() {
 		fmt.Println(strings.Repeat("=", 50))
 		fmt.Println("=================== Order Menu ===================")
 		fmt.Println("1. Create Order")
-		fmt.Println("2. View Of List Orders")
-		fmt.Println("3. View Details Order by ID")
-		fmt.Println("4. Update Order")
-		fmt.Println("5. Delete Order")
-		fmt.Println("6. Back to Main Menu")
+		fmt.Println("2. Complete Order")
+		fmt.Println("3. View Of List Order")
+		fmt.Println("4. View Details Order by ID")
+		fmt.Println("5. Back to Main Menu")
 		fmt.Println(strings.Repeat("=", 50))
 
 		fmt.Print("Enter your choice: ")
@@ -170,7 +172,7 @@ func orderMenu() {
 
 		switch choice {
 		case 1:
-			createCustomer()
+			createOrder()
 		case 2:
 			customers := viewOfListCustomers()
 			for _, customer := range customers {
@@ -510,7 +512,7 @@ func deleteService() {
 		fmt.Println("Error checking service ID:", err)
 	}
 
-	sqlCheckOrder := "SELECT service_id FROM service WHERE service_id = $1;"
+	sqlCheckOrder := "SELECT service_id FROM order_detail WHERE service_id = $1;"
 	var order_id int
 
 	err = db.QueryRow(sqlCheckOrder, order_id).Scan(&order_id)
@@ -529,6 +531,127 @@ func deleteService() {
 		fmt.Println("Error deleting service:", err)
 	} else {
 		fmt.Println("Successfully Delete Data!")
+	}
+}
+
+func createOrder() {
+	db := connectDb()
+	defer db.Close()
+
+	// memulai transaction
+	tx, err := db.Begin()
+	if err != nil {
+		panic(err)
+	}
+
+	// defer untuk rollback jika error
+	defer func() {
+		if p := recover(); p != nil {
+			tx.Rollback()
+			panic(p)
+		}
+	}()
+
+	order := entity.OrderEnrollment{}
+	orderDetail := entity.OrderDetailEnrollment{}
+	scanner := bufio.NewScanner(os.Stdin)
+	var customer_id int
+
+	// input customer id
+	fmt.Print("Enter Customer ID: ")
+	scanner.Scan()
+	customer_id, _ = strconv.Atoi(scanner.Text())
+
+	// query customer id untuk cek customer id
+	sqlCheckCustomer := "SELECT customer_id FROM customer WHERE customer_id = $1;"
+	err = tx.QueryRow(sqlCheckCustomer, customer_id).Scan(&customer_id)
+
+	// cek jika customer ada/tidak
+	if err == sql.ErrNoRows {
+		fmt.Println("Customer not found.")
+		tx.Rollback()
+		return
+	} else if err != nil {
+		fmt.Println("Error checking customer ID:", err)
+		tx.Rollback()
+		return
+	}
+
+	// input order id
+	fmt.Print("Enter Order ID: ")
+	scanner.Scan()
+	order.Id, _ = strconv.Atoi(scanner.Text())
+
+	sqlCheckOrder := "SELECT order_id FROM \"order\" WHERE order_id = $1;"
+	err = tx.QueryRow(sqlCheckOrder, order.Id).Scan(&order.Id)
+
+	// cek jika order id ada/tidak
+	if err == nil {
+		fmt.Println("Order ID already exists. Please enter a different ID.")
+		tx.Rollback()
+		return
+	} else if err != sql.ErrNoRows {
+		fmt.Println("Error checking order ID:", err)
+		tx.Rollback()
+		return
+	}
+
+	// input completion date
+	fmt.Print("Enter Completion Date (YYYY-MM-DD): ")
+	scanner.Scan()
+	dateStr := scanner.Text()
+
+	completionTime, err := time.Parse("2006-01-02", dateStr)
+	if err != nil {
+		fmt.Println("Invalid date format.")
+		tx.Rollback()
+		return
+	}
+	order.CompletionDate = sql.NullTime{Time: completionTime, Valid: true}
+
+	// input received by
+	fmt.Print("Enter Received By: ")
+	scanner.Scan()
+	order.ReceivedBy = scanner.Text()
+
+	// insert ke tabel order
+	sqlInsertOrder := "INSERT INTO \"order\" (order_id, customer_id, order_date, completion_date, received_by) VALUES ($1, $2, $3, $4, $5);"
+	_, err = tx.Exec(sqlInsertOrder, order.Id, customer_id, time.Now(), order.CompletionDate, order.ReceivedBy)
+
+	if err != nil {
+		fmt.Println("Error creating order:", err)
+		tx.Rollback()
+		return
+	}
+
+	// input service id dan quantity
+	fmt.Print("Enter Service ID: ")
+	scanner.Scan()
+	orderDetail.ServiceId, _ = strconv.Atoi(scanner.Text())
+
+	fmt.Print("Enter Quantity: ")
+	scanner.Scan()
+	orderDetail.Qty, _ = strconv.Atoi(scanner.Text())
+
+	// query service id untuk cek service id
+	sqlInsertOrderDetail := "INSERT INTO order_detail (order_id, service_id, qty) VALUES ($1, $2, $3);"
+	_, err = tx.Exec(sqlInsertOrderDetail, order.Id, orderDetail.ServiceId, orderDetail.Qty)
+
+	// cek jika service id ada/tidak
+	if err != nil {
+		fmt.Println("Error adding order detail:", err)
+		tx.Rollback()
+		return
+	}
+
+	fmt.Println("Order and order detail added successfully!")
+
+	// commit transaction jika tidak ada error
+	err = tx.Commit()
+	if err != nil {
+		fmt.Println("Error committing transaction:", err)
+	} else {
+		fmt.Println("Transaction committed successfully!")
 	}
 }
 
