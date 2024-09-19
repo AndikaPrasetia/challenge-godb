@@ -4,8 +4,6 @@ Enigma Laundry adalah aplikasi berbasis Go yang menggunakan PostgreSQL sebagai d
 
 Prasyarat
 
-Sebelum memulai, pastikan Anda telah menginstal dan mengonfigurasi:
-
     Go (versi 1.18 ke atas)
     PostgreSQL (versi 12 ke atas)
 
